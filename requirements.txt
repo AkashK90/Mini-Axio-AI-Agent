@@ -1,0 +1,40 @@
+# Core Dependencies
+flask==3.0.0
+flask-cors==4.0.0
+
+# YouTube Processing
+yt-dlp==2024.3.10
+google-api-python-client==2.108.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+
+# Machine Learning & Embeddings
+torch==2.1.0
+torchvision==0.16.0
+sentence-transformers==2.2.2
+transformers==4.35.0
+
+# Image Processing
+Pillow==10.1.0
+opencv-python==4.8.1.78
+
+# Audio Processing (Optional - for advanced fingerprinting)
+librosa==0.10.1
+pydub==0.25.1
+
+# Scientific Computing
+numpy==1.24.3
+scipy==1.11.4
+
+# API & Web
+requests==2.31.0
+anthropic==0.8.1  # For Claude API integration
+
+# Utilities
+python-dotenv==1.0.0
+tqdm==4.66.1
+
+# Development
+pytest==7.4.3
+black==23.12.0
+flake8==6.1.0

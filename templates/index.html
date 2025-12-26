@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Similarity Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #videoUrl {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #videoUrl:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #scanBtn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #scanBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #scanBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .settings label {
+            font-size: 14px;
+        }
+
+        .settings input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .thumbnail {
+            flex-shrink: 0;
+            width: 200px;
+            height: 150px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .result-content {
+            flex: 1;
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .result-title a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .result-title a:hover {
+            color: #667eea;
+        }
+
+        .similarity-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .similarity-score {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .classification {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .classification.re-upload {
+            background: #fee;
+            color: #c33;
+        }
+
+        .classification.edited-copy {
+            background: #fef3cd;
+            color: #856404;
+        }
+
+        .classification.similar-content {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .classification.related {
+            background: #e7e7e7;
+            color: #666;
+        }
+
+        .reason {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .result-card {
+                flex-direction: column;
+            }
+
+            .thumbnail {
+                width: 100%;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎥 Video Similarity Finder</h1>
+            <p>Discover similar YouTube videos using AI-powered analysis</p>
+        </div>
+
+        <div class="search-box">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="videoUrl" 
+                    placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
+                    value="https://www.youtube.com/shorts/ZxEpaJN8kyw"
+                >
+                <button id="scanBtn" onclick="scanVideo()">Scan</button>
+            </div>
+            <div class="settings">
+                <label>Results:</label>
+                <input type="number" id="topK" value="5" min="1" max="10">
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing video and finding similar content...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        async function scanVideo() {
+            const url = document.getElementById('videoUrl').value.trim();
+            const topK = parseInt(document.getElementById('topK').value);
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+            const scanBtn = document.getElementById('scanBtn');
+
+            // Reset UI
+            loading.classList.remove('active');
+            results.classList.remove('active');
+            error.classList.remove('active');
+            results.innerHTML = '';
+
+            // Validate URL
+            if (!url) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('active');
+            scanBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, top_k: topK })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to scan video');
+                }
+
+                displayResults(data.results);
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                loading.classList.remove('active');
+                scanBtn.disabled = false;
+            }
+        }
+
+        function displayResults(resultsData) {
+            const resultsContainer = document.getElementById('results');
+            
+            if (!resultsData || resultsData.length === 0) {
+                showError('No similar videos found');
+                return;
+            }
+
+            resultsContainer.classList.add('active');
+
+            resultsData.forEach((result, index) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                card.innerHTML = `
+                    <div class="thumbnail">
+                        <img src="${result.thumbnail}" alt="${result.title}">
+                    </div>
+                    <div class="result-content">
+                        <div class="result-title">
+                            <a href="${result.url}" target="_blank">${result.title}</a>
+                        </div>
+                        <div class="similarity-score">${result.similarity}% Similar</div>
+                        <div class="similarity-bar">
+                            <div class="similarity-fill" style="width: ${result.similarity}%"></div>
+                        </div>
+                        <span class="classification ${result.classification}">${result.classification.replace('-', ' ').toUpperCase()}</span>
+                        <p class="reason">${result.reason}</p>
+                    </div>
+                `;
+                
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.add('active');
+        }
+
+        // Allow Enter key to trigger scan
+        document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                scanVideo();
+            }
+        });
+    </script>
+</body>
+</html>
